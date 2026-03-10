@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Bowling RPG</title>
+<style>
+body{
+font-family:sans-serif;
+text-align:center;
+background:#111;
+color:white;
+}
+
+button{
+font-size:20px;
+padding:10px;
+margin:5px;
+}
+
+input{
+font-size:20px;
+width:80px;
+text-align:center;
+}
+
+.monster{
+font-size:24px;
+margin:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎳 Bowling RPG</h1>
+
+<div>
+人数:
+<button onclick="startGame(1)">1</button>
+<button onclick="startGame(2)">2</button>
+<button onclick="startGame(3)">3</button>
+<button onclick="startGame(4)">4</button>
+</div>
+
+<div class="monster">
+<p id="monsterName"></p>
+<p>HP: <span id="hp"></span></p>
+</div>
+
+<div>
+スコア<br>
+<input id="score">
+</div>
+
+<div>
+ストライク数<br>
+<input id="strike">
+</div>
+
+<div>
+スペア数<br>
+<input id="spare">
+</div>
+
+<br>
+
+<button onclick="attack()">攻撃</button>
+
+<p id="log"></p>
+
+<script>
+
+let monsters=[
+{name:"ゴブリン",hp:180},
+{name:"オーガ",hp:260},
+{name:"ドラゴン",hp:340}
+]
+
+let current=0
+let hp=0
+let multiplier=1
+
+function startGame(players){
+
+const table=[1,1.8,2.5,3.2]
+
+multiplier=table[players-1]
+
+current=0
+
+hp=Math.floor(monsters[0].hp*multiplier)
+
+update()
+
+}
+
+function update(){
+
+document.getElementById("monsterName").innerText=monsters[current].name
+document.getElementById("hp").innerText=hp
+
+}
+
+function attack(){
+
+let score=parseInt(score.value)||0
+let strike=parseInt(strike.value)||0
+let spare=parseInt(spare.value)||0
+
+let damage=score+(strike*10)+(spare*5)
+
+if(score>=200){
+
+damage=Math.floor(damage*1.5)
+
+}
+
+hp-=damage
+
+log.innerText="⚔️ "+damage+" ダメージ!"
+
+if(hp<=0){
+
+current++
+
+if(current>=monsters.length){
+
+log.innerText="🐉 全討伐！！"
+
+return
+
+}
+
+hp=Math.floor(monsters[current].hp*multiplier)
+
+}
+
+update()
+
+}
+
+</script>
+
+</body>
+</html>
