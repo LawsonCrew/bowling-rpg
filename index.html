@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta charset="UTF-8">
 <title>Bowling RPG</title>
@@ -13,29 +14,39 @@ color:white;
 text-align:center;
 }
 
+table{
+margin:10px auto;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid white;
+padding:6px;
+width:30px;
+}
+
 button{
-font-size:20px;
-padding:10px;
+font-size:18px;
+padding:8px;
 margin:5px;
 }
 
 input{
-font-size:20px;
+font-size:18px;
 width:60px;
 text-align:center;
 }
 
-#log{
-margin-top:20px;
-}
-
 </style>
-
 </head>
 
 <body>
 
 <h1>🎳 Bowling RPG</h1>
+
+<div id="scoreboards"></div>
+
+<h2 id="turn"></h2>
 
 <div>
 人数:
@@ -48,16 +59,11 @@ margin-top:20px;
 <h2 id="monsterName"></h2>
 HP: <span id="hp"></span>
 
-<h2>現在のゲーム</h2>
+<br><br>
 
-投球ピン数  
+ピン数  
 <input id="pins">
 <button onclick="roll()">投げる</button>
-
-<h3>ゲームスコア: <span id="score">0</span></h3>
-
-<h3>投球履歴</h3>
-<p id="rolls"></p>
 
 <h3 id="log"></h3>
 
@@ -69,38 +75,69 @@ let monsters=[
 {name:"ドラゴン",hp:340}
 ]
 
+let players=1
+let currentPlayer=0
+let playerRolls=[]
+let frame=1
+let rollInFrame=1
+
 let currentMonster=0
 let monsterHP=0
 let multiplier=1
 
-let rolls=[]
-let score=0
-let frame=1
-let rollInFrame=1
+function startGame(p){
 
-function startGame(players){
+players=p
+currentPlayer=0
+frame=1
+rollInFrame=1
 
 const table=[1,1.8,2.5,3.2]
-
-multiplier=table[players-1]
+multiplier=table[p-1]
 
 currentMonster=0
 monsterHP=Math.floor(monsters[0].hp*multiplier)
 
-resetGame()
+playerRolls=[]
 
-updateMonster()
+let area=document.getElementById("scoreboards")
+area.innerHTML=""
+
+for(let i=0;i<players;i++){
+
+playerRolls.push([])
+
+area.innerHTML+=createBoard(i)
 
 }
 
-function resetGame(){
+updateMonster()
+updateTurn()
 
-rolls=[]
-score=0
-frame=1
-rollInFrame=1
+}
 
-updateScore()
+function createBoard(player){
+
+return `
+<h3>Player ${player+1}</h3>
+
+<table>
+<tr>
+<th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+<th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+</tr>
+
+<tr id="rolls${player}">
+<td></td><td></td><td></td><td></td><td></td>
+<td></td><td></td><td></td><td></td><td></td>
+</tr>
+
+<tr id="score${player}">
+<td colspan="10">0</td>
+</tr>
+
+</table>
+`
 
 }
 
@@ -110,22 +147,19 @@ let pins=parseInt(document.getElementById("pins").value)
 
 if(isNaN(pins)) return
 
-rolls.push(pins)
+playerRolls[currentPlayer].push(pins)
 
-score+=pins
-
-updateScore()
+updateBoard()
 
 if(pins==10 && rollInFrame==1){
 
-frame++
+nextFrame()
 
 }else{
 
 if(rollInFrame==2){
 
-frame++
-rollInFrame=1
+nextFrame()
 
 }else{
 
@@ -136,40 +170,88 @@ return
 
 }
 
+}
+
+function nextFrame(){
+
 rollInFrame=1
+frame++
 
 if(frame>10){
 
-attack()
+endGame()
+
+return
 
 }
 
-}
-
-function updateScore(){
-
-document.getElementById("score").innerText=score
-document.getElementById("rolls").innerText=rolls.join(" , ")
+nextPlayer()
 
 }
 
-function attack(){
+function nextPlayer(){
 
-let strikeCount=rolls.filter(r=>r==10).length
+currentPlayer++
 
-let spareCount=0
+if(currentPlayer>=players){
+
+currentPlayer=0
+
+}
+
+updateTurn()
+
+}
+
+function updateTurn(){
+
+document.getElementById("turn").innerText=
+"Player "+(currentPlayer+1)+" のターン"
+
+}
+
+function updateBoard(){
+
+let rolls=playerRolls[currentPlayer]
+
+let row=document.getElementById("rolls"+currentPlayer)
+
+let cells=row.children
+
+for(let i=0;i<rolls.length && i<10;i++){
+
+cells[i].innerText=rolls[i]
+
+}
+
+let total=rolls.reduce((a,b)=>a+b,0)
+
+document.getElementById("score"+currentPlayer)
+.innerText=total
+
+}
+
+function endGame(){
+
+let rolls=playerRolls[currentPlayer]
+
+let score=rolls.reduce((a,b)=>a+b,0)
+
+let strike=rolls.filter(r=>r==10).length
+
+let spare=0
 
 for(let i=0;i<rolls.length;i+=2){
 
-if(rolls[i]+(rolls[i+1]||0)==10 && rolls[i]!=10){
+if((rolls[i]||0)+(rolls[i+1]||0)==10 && rolls[i]!=10){
 
-spareCount++
-
-}
+spare++
 
 }
 
-let damage=score+(strikeCount*10)+(spareCount*5)
+}
+
+let damage=score+(strike*10)+(spare*5)
 
 if(score>=200){
 
@@ -191,7 +273,6 @@ text+=" 🐉 全討伐！"
 
 document.getElementById("monsterName").innerText="クリア！"
 document.getElementById("hp").innerText="0"
-
 document.getElementById("log").innerText=text
 
 return
@@ -208,13 +289,19 @@ document.getElementById("log").innerText=text
 
 updateMonster()
 
-resetGame()
+frame=1
+rollInFrame=1
+playerRolls[currentPlayer]=[]
+
+updateBoard()
 
 }
 
 function updateMonster(){
 
-document.getElementById("monsterName").innerText=monsters[currentMonster].name
+document.getElementById("monsterName").innerText=
+monsters[currentMonster].name
+
 document.getElementById("hp").innerText=monsterHP
 
 }
