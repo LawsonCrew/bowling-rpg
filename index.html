@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Bowling RPG</title>
+
 <style>
+
 body{
 font-family:sans-serif;
-text-align:center;
 background:#111;
 color:white;
+text-align:center;
 }
 
 button{
@@ -19,15 +21,16 @@ margin:5px;
 
 input{
 font-size:20px;
-width:80px;
+width:60px;
 text-align:center;
 }
 
-.monster{
-font-size:24px;
-margin:20px;
+#log{
+margin-top:20px;
 }
+
 </style>
+
 </head>
 
 <body>
@@ -42,31 +45,21 @@ margin:20px;
 <button onclick="startGame(4)">4</button>
 </div>
 
-<div class="monster">
-<p id="monsterName"></p>
-<p>HP: <span id="hp"></span></p>
-</div>
+<h2 id="monsterName"></h2>
+HP: <span id="hp"></span>
 
-<div>
-スコア<br>
-<input id="score">
-</div>
+<h2>現在のゲーム</h2>
 
-<div>
-ストライク数<br>
-<input id="strike">
-</div>
+投球ピン数  
+<input id="pins">
+<button onclick="roll()">投げる</button>
 
-<div>
-スペア数<br>
-<input id="spare">
-</div>
+<h3>ゲームスコア: <span id="score">0</span></h3>
 
-<br>
+<h3>投球履歴</h3>
+<p id="rolls"></p>
 
-<button onclick="attack()">攻撃</button>
-
-<p id="log"></p>
+<h3 id="log"></h3>
 
 <script>
 
@@ -76,9 +69,14 @@ let monsters=[
 {name:"ドラゴン",hp:340}
 ]
 
-let current=0
-let hp=0
+let currentMonster=0
+let monsterHP=0
 let multiplier=1
+
+let rolls=[]
+let score=0
+let frame=1
+let rollInFrame=1
 
 function startGame(players){
 
@@ -86,28 +84,92 @@ const table=[1,1.8,2.5,3.2]
 
 multiplier=table[players-1]
 
-current=0
+currentMonster=0
+monsterHP=Math.floor(monsters[0].hp*multiplier)
 
-hp=Math.floor(monsters[0].hp*multiplier)
+resetGame()
 
-update()
+updateMonster()
 
 }
 
-function update(){
+function resetGame(){
 
-document.getElementById("monsterName").innerText=monsters[current].name
-document.getElementById("hp").innerText=hp
+rolls=[]
+score=0
+frame=1
+rollInFrame=1
+
+updateScore()
+
+}
+
+function roll(){
+
+let pins=parseInt(document.getElementById("pins").value)
+
+if(isNaN(pins)) return
+
+rolls.push(pins)
+
+score+=pins
+
+updateScore()
+
+if(pins==10 && rollInFrame==1){
+
+frame++
+
+}else{
+
+if(rollInFrame==2){
+
+frame++
+rollInFrame=1
+
+}else{
+
+rollInFrame=2
+return
+
+}
+
+}
+
+rollInFrame=1
+
+if(frame>10){
+
+attack()
+
+}
+
+}
+
+function updateScore(){
+
+document.getElementById("score").innerText=score
+document.getElementById("rolls").innerText=rolls.join(" , ")
 
 }
 
 function attack(){
 
-let score=parseInt(score.value)||0
-let strike=parseInt(strike.value)||0
-let spare=parseInt(spare.value)||0
+let strikeCount=rolls.filter(r=>r==10).length
 
-let damage=score+(strike*10)+(spare*5)
+let spareCount=0
+
+for(let i=0;i<rolls.length;i+=2){
+
+if(rolls[i]+(rolls[i+1]||0)==10 && rolls[i]!=10){
+
+spareCount++
+
+}
+
+}
+
+let damage=score+(strikeCount*10)+(spareCount*5)
 
 if(score>=200){
 
@@ -115,27 +177,45 @@ damage=Math.floor(damage*1.5)
 
 }
 
-hp-=damage
+monsterHP-=damage
 
-log.innerText="⚔️ "+damage+" ダメージ!"
+let text="⚔️ "+damage+" ダメージ！"
 
-if(hp<=0){
+if(monsterHP<=0){
 
-current++
+currentMonster++
 
-if(current>=monsters.length){
+if(currentMonster>=monsters.length){
 
-log.innerText="🐉 全討伐！！"
+text+=" 🐉 全討伐！"
+
+document.getElementById("monsterName").innerText="クリア！"
+document.getElementById("hp").innerText="0"
+
+document.getElementById("log").innerText=text
 
 return
 
 }
 
-hp=Math.floor(monsters[current].hp*multiplier)
+monsterHP=Math.floor(monsters[currentMonster].hp*multiplier)
+
+text+=" → "+monsters[currentMonster].name+" 出現！"
 
 }
 
-update()
+document.getElementById("log").innerText=text
+
+updateMonster()
+
+resetGame()
+
+}
+
+function updateMonster(){
+
+document.getElementById("monsterName").innerText=monsters[currentMonster].name
+document.getElementById("hp").innerText=monsterHP
 
 }
 
